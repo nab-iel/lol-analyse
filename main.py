@@ -1,16 +1,108 @@
-# This is a sample Python script.
+import requests
+import os
+from fastapi import FastAPI, Depends, HTTPException, Header
+from dotenv import load_dotenv
 
-# Press ⌃F5 to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+load_dotenv()
+app = FastAPI()
+
+RIOT_API_KEY = os.getenv("RIOT_API_KEY")
+if not RIOT_API_KEY:
+    raise ValueError("RIOT_API_KEY not found in environment variables.")
+
+API_KEY_HEADER = {"X-Riot-Token": RIOT_API_KEY}
+RIOT_BASE_URL = "https://europe.api.riotgames.com"
+api_key_header = Header(name="X-API-Key")
+
+def get_api_key(x_api_key: str = api_key_header):
+    if x_api_key != RIOT_API_KEY:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid API Key. Check that you are passing a 'X-API-Key' on your header."
+        )
+    return x_api_key
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press F9 to toggle the breakpoint.
+@app.get("/")
+def read_root():
+    return {"Hello": "Welcome to the LoL Stats API"}
 
+@app.get("/stats/{gameName}/{tagLine}", dependencies=[Depends(get_api_key)])
+def get_most_recent_game_stats(gameName: str, tagLine: str):
+    account_url = f"{RIOT_BASE_URL}/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}"
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+    try:
+        res = requests.get(account_url, headers=API_KEY_HEADER)
+        res.raise_for_status()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+        summoner_data = res.json()
+        puuid = summoner_data.get("puuid")
+
+        if not puuid:
+            raise HTTPException(status_code=404, detail="PUUID not found for the given summoner.")
+    except requests.exceptions.HTTPError as err:
+        if err.response.status_code == 404:
+            raise HTTPException(status_code=404, detail="Summoner not found.")
+        elif err.response.status_code == 403:
+            raise HTTPException(status_code=403, detail="Invalid API Key. Please check your Riot API key.")
+        else:
+            raise HTTPException(status_code=err.response.status_code, detail=f"An error occurred: {err}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
+    match_history_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/by-puuid/{puuid}/ids?count=1"
+
+    try:
+        match_history_res = requests.get(match_history_url, headers=API_KEY_HEADER)
+        match_history_res.raise_for_status()
+        match_ids = match_history_res.json()
+
+        if not match_ids:
+            raise HTTPException(status_code=404, detail="No matches found for this summoner.")
+
+        most_recent_match_id = match_ids[0]
+
+        if not most_recent_match_id:
+            raise HTTPException(status_code=404, detail="Most recent match ID not found.")
+    except requests.exceptions.HTTPError as err:
+        raise HTTPException(status_code=err.response.status_code,
+                        detail=f"An error occurred while fetching match IDs: {err}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred during match ID retrieval: {str(e)}")
+
+    match_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/{most_recent_match_id}"
+
+    try:
+        match_res = requests.get(match_url, headers=API_KEY_HEADER)
+        match_res.raise_for_status()
+        match_data = match_res.json()
+
+        player_stats = None
+        for participant in match_data.get("info", {}).get("participants", []):
+            if participant.get("puuid") == puuid:
+                player_stats = participant
+                break
+
+        if not player_stats:
+            raise HTTPException(status_code=404, detail="Player's stats not found in the match data.")
+
+        analytics = {
+            "gameName": player_stats.get("riotIdGameName"),
+            "tagLine": player_stats.get("riotIdTagline"),
+            "championPlayed": player_stats.get("championName"),
+            "kills": player_stats.get("kills"),
+            "deaths": player_stats.get("deaths"),
+            "assists": player_stats.get("assists"),
+            "win": player_stats.get("win"),
+            "totalMinionsKilled": player_stats.get("totalMinionsKilled"),
+            "goldEarned": player_stats.get("goldEarned"),
+            "matchId": most_recent_match_id
+        }
+
+        return analytics
+    except requests.exceptions.HTTPError as err:
+        raise HTTPException(status_code=err.respones.status_code,
+                            detail=f"An error occurred wihle fetching match ID: {err}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
