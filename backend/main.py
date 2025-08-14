@@ -22,7 +22,6 @@ def get_api_key(x_api_key: str = api_key_header):
         )
     return x_api_key
 
-
 @app.get("/")
 def read_root():
     return {"Hello": "Welcome to the LoL Stats API"}
@@ -98,11 +97,43 @@ def get_most_recent_game_stats(gameName: str, tagLine: str):
             "goldEarned": player_stats.get("goldEarned"),
             "matchId": most_recent_match_id
         }
-
-        return analytics
     except requests.exceptions.HTTPError as err:
         raise HTTPException(status_code=err.respones.status_code,
                             detail=f"An error occurred wihle fetching match ID: {err}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+
+    timeline_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/{most_recent_match_id}/timeline"
+    try:
+        timeline_response = requests.get(timeline_url, headers=API_KEY_HEADER)
+        timeline_response.raise_for_status()
+        timeline_data = timeline_response.json()
+    except requests.exceptions.HTTPError as err:
+        raise HTTPException(status_code=err.response.status_code,
+                            detail=f"An error occurred while fetching timeline data: {err}")
+
+    gold_over_time_data = []
+    frames = timeline_data.get("info", {}).get("frames", [])
+
+    for frame in frames:
+        minute = frame.get("timestamp") // 60000  # Convert milliseconds to minutes
+        participant_frames = frame.get("participantFrames", {})
+
+        for participant_id, participant_data in participant_frames.items():
+            if participant_data.get("participantId") == player_stats.get("participantId"):
+                gold_over_time_data.append(participant_data.get("totalGold"))
+                break
+
+    analytics = {
+        "summonerInfo": {
+            "gameName": player_stats.get("riotIdGameName"),
+            "tagLine": player_stats.get("riotIdTagline"),
+            "championPlayed": player_stats.get("championName"),
+            "win": player_stats.get("win")
+        },
+        "gold_over_time_data": gold_over_time_data,
+        "matchId": most_recent_match_id
+    }
+
+    return analytics
 
