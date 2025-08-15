@@ -9,29 +9,20 @@ app = FastAPI()
 RIOT_API_KEY = os.getenv("RIOT_API_KEY")
 if not RIOT_API_KEY:
     raise ValueError("RIOT_API_KEY not found in environment variables.")
-
-API_KEY_HEADER = {"X-Riot-Token": RIOT_API_KEY}
 RIOT_BASE_URL = "https://europe.api.riotgames.com"
-api_key_header = Header(name="X-API-Key")
-
-def get_api_key(x_api_key: str = api_key_header):
-    if x_api_key != RIOT_API_KEY:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid API Key. Check that you are passing a 'X-API-Key' on your header."
-        )
-    return x_api_key
-
 @app.get("/")
 def read_root():
     return {"Hello": "Welcome to the LoL Stats API"}
 
-@app.get("/stats/{gameName}/{tagLine}", dependencies=[Depends(get_api_key)])
+@app.get("/stats/{gameName}/{tagLine}")
 def get_most_recent_game_stats(gameName: str, tagLine: str):
+    if not RIOT_API_KEY:
+        raise HTTPException(500, "Server missing API key")
+    headers = {"X-Riot-Token": RIOT_API_KEY}
     account_url = f"{RIOT_BASE_URL}/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}"
 
     try:
-        res = requests.get(account_url, headers=API_KEY_HEADER)
+        res = requests.get(account_url, headers=headers)
         res.raise_for_status()
 
         summoner_data = res.json()
@@ -52,7 +43,7 @@ def get_most_recent_game_stats(gameName: str, tagLine: str):
     match_history_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/by-puuid/{puuid}/ids?count=1"
 
     try:
-        match_history_res = requests.get(match_history_url, headers=API_KEY_HEADER)
+        match_history_res = requests.get(match_history_url, headers=headers)
         match_history_res.raise_for_status()
         match_ids = match_history_res.json()
 
@@ -72,7 +63,7 @@ def get_most_recent_game_stats(gameName: str, tagLine: str):
     match_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/{most_recent_match_id}"
 
     try:
-        match_res = requests.get(match_url, headers=API_KEY_HEADER)
+        match_res = requests.get(match_url, headers=headers)
         match_res.raise_for_status()
         match_data = match_res.json()
 
@@ -105,7 +96,7 @@ def get_most_recent_game_stats(gameName: str, tagLine: str):
 
     timeline_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/{most_recent_match_id}/timeline"
     try:
-        timeline_response = requests.get(timeline_url, headers=API_KEY_HEADER)
+        timeline_response = requests.get(timeline_url, headers=headers)
         timeline_response.raise_for_status()
         timeline_data = timeline_response.json()
     except requests.exceptions.HTTPError as err:
