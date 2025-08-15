@@ -1,5 +1,6 @@
 import os
 import httpx
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
 
@@ -37,26 +38,25 @@ async def get_most_recent_game_stats(gameName: str, tagLine: str):
             match_history_url,
             headers=headers
         )
-        match_data = match_history_res.json()
-
-        if not match_data:
+        match_ids = match_history_res.json()
+        if not match_ids:
             raise HTTPException(404, "No matches found for this summoner.")
 
-        most_recent_match_id = match_data[0]
+        classic_match_id = None
+        match_data = None
+        for match_id in match_ids:
+            match_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/{match_id}"
+            match_res = await client.get(match_url, headers=headers)
+            data = match_res.json()
+            if data["info"].get("gameMode") == "CLASSIC":
+                classic_match_id = match_id
+                match_data = data
+                break
 
-        if not most_recent_match_id:
-            raise HTTPException(status_code=404, detail="Most recent match ID not found.")
+        if not classic_match_id or not match_data:
+            raise HTTPException(404, "No Classic game found in recent matches.")
 
-        match_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/{most_recent_match_id}"
-
-        match_res = await client.get(
-            match_url,
-            headers=headers
-        )
-
-        match_data = match_res.json()
-        timeline_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/{most_recent_match_id}/timeline"
-
+        timeline_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/{classic_match_id}/timeline"
         timeline_res = await client.get(
             timeline_url,
             headers=headers
@@ -100,8 +100,11 @@ async def get_most_recent_game_stats(gameName: str, tagLine: str):
             "gameName": gameName,
             "tagLine": tagLine,
             "championPlayed": current_participant["championName"],
-            "win": current_participant["win"]
+            "win": current_participant["win"],
+            "gameMode": match_data["info"].get("gameMode")
         },
         "team_gold_data": team_gold_data
     }
 
+if __name__ == '__main__':
+    uvicorn.run(app, host="0.0.0.0", port=8000)
