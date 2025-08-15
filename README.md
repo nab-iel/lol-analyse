@@ -2,7 +2,7 @@
 
 A web application for analysing League of Legends match performance, featuring interactive gold progression charts and team comparisons.
 
-![Project Image Example](SCR-20250815-pmja.png)
+![Project Image Example](Capture.png)
 
 ## Features
 

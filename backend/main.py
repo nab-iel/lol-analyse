@@ -100,8 +100,12 @@ async def get_most_recent_game_stats(gameName: str, tagLine: str):
             "gameName": gameName,
             "tagLine": tagLine,
             "championPlayed": current_participant["championName"],
+            "championPfp": f"https://ddragon.leagueoflegends.com/cdn/14.12.1/img/champion/{current_participant["championName"]}.png",
             "win": current_participant["win"],
-            "gameMode": match_data["info"].get("gameMode")
+            "gameMode": match_data["info"].get("gameMode"),
+            "kills": current_participant["kills"],
+            "deaths": current_participant["deaths"],
+            "assists": current_participant["assists"]
         },
         "team_gold_data": team_gold_data
     }
