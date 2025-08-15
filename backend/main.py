@@ -1,6 +1,6 @@
-import requests
 import os
-from fastapi import FastAPI, Depends, HTTPException, Header
+import httpx
+from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,116 +15,93 @@ def read_root():
     return {"Hello": "Welcome to the LoL Stats API"}
 
 @app.get("/stats/{gameName}/{tagLine}")
-def get_most_recent_game_stats(gameName: str, tagLine: str):
+async def get_most_recent_game_stats(gameName: str, tagLine: str):
     if not RIOT_API_KEY:
         raise HTTPException(500, "Server missing API key")
     headers = {"X-Riot-Token": RIOT_API_KEY}
     account_url = f"{RIOT_BASE_URL}/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}"
 
-    try:
-        res = requests.get(account_url, headers=headers)
-        res.raise_for_status()
-
-        summoner_data = res.json()
-        puuid = summoner_data.get("puuid")
+    async with httpx.AsyncClient() as client:
+        account_res = await client.get(
+            account_url,
+            headers=headers
+        )
+        account_data = account_res.json()
+        puuid = account_data.get("puuid")
 
         if not puuid:
-            raise HTTPException(status_code=404, detail="PUUID not found for the given summoner.")
-    except requests.exceptions.HTTPError as err:
-        if err.response.status_code == 404:
-            raise HTTPException(status_code=404, detail="Summoner not found.")
-        elif err.response.status_code == 403:
-            raise HTTPException(status_code=403, detail="Invalid API Key. Please check your Riot API key.")
-        else:
-            raise HTTPException(status_code=err.response.status_code, detail=f"An error occurred: {err}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+            raise HTTPException(404, "PUUID not found for the given summoner.")
 
-    match_history_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/by-puuid/{puuid}/ids?count=1"
+        match_history_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/by-puuid/{puuid}/ids?count=1"
+        match_history_res = await client.get(
+            match_history_url,
+            headers=headers
+        )
+        match_data = match_history_res.json()
 
-    try:
-        match_history_res = requests.get(match_history_url, headers=headers)
-        match_history_res.raise_for_status()
-        match_ids = match_history_res.json()
+        if not match_data:
+            raise HTTPException(404, "No matches found for this summoner.")
 
-        if not match_ids:
-            raise HTTPException(status_code=404, detail="No matches found for this summoner.")
-
-        most_recent_match_id = match_ids[0]
+        most_recent_match_id = match_data[0]
 
         if not most_recent_match_id:
             raise HTTPException(status_code=404, detail="Most recent match ID not found.")
-    except requests.exceptions.HTTPError as err:
-        raise HTTPException(status_code=err.response.status_code,
-                        detail=f"An error occurred while fetching match IDs: {err}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred during match ID retrieval: {str(e)}")
 
-    match_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/{most_recent_match_id}"
+        match_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/{most_recent_match_id}"
 
-    try:
-        match_res = requests.get(match_url, headers=headers)
-        match_res.raise_for_status()
+        match_res = await client.get(
+            match_url,
+            headers=headers
+        )
+
         match_data = match_res.json()
+        timeline_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/{most_recent_match_id}/timeline"
 
-        player_stats = None
-        for participant in match_data.get("info", {}).get("participants", []):
-            if participant.get("puuid") == puuid:
-                player_stats = participant
-                break
+        timeline_res = await client.get(
+            timeline_url,
+            headers=headers
+        )
+        timeline_data = timeline_res.json()
 
-        if not player_stats:
-            raise HTTPException(status_code=404, detail="Player's stats not found in the match data.")
+    current_participant = None
+    for participant in match_data["info"]["participants"]:
+        if participant["puuid"] == puuid:
+            current_participant = participant
+            break
 
-        analytics = {
-            "gameName": player_stats.get("riotIdGameName"),
-            "tagLine": player_stats.get("riotIdTagline"),
-            "championPlayed": player_stats.get("championName"),
-            "kills": player_stats.get("kills"),
-            "deaths": player_stats.get("deaths"),
-            "assists": player_stats.get("assists"),
-            "win": player_stats.get("win"),
-            "totalMinionsKilled": player_stats.get("totalMinionsKilled"),
-            "goldEarned": player_stats.get("goldEarned"),
-            "matchId": most_recent_match_id
-        }
-    except requests.exceptions.HTTPError as err:
-        raise HTTPException(status_code=err.respones.status_code,
-                            detail=f"An error occurred wihle fetching match ID: {err}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
+    if not current_participant:
+        raise HTTPException(404, "Player not found in match")
 
-    timeline_url = f"{RIOT_BASE_URL}/lol/match/v5/matches/{most_recent_match_id}/timeline"
-    try:
-        timeline_response = requests.get(timeline_url, headers=headers)
-        timeline_response.raise_for_status()
-        timeline_data = timeline_response.json()
-    except requests.exceptions.HTTPError as err:
-        raise HTTPException(status_code=err.response.status_code,
-                            detail=f"An error occurred while fetching timeline data: {err}")
+    team_members = [
+        p for p in match_data["info"]["participants"]
+        if p["teamId"] == current_participant["teamId"]
+    ]
 
-    gold_over_time_data = []
-    frames = timeline_data.get("info", {}).get("frames", [])
+    team_gold_data = []
 
-    for frame in frames:
-        minute = frame.get("timestamp") // 60000  # Convert milliseconds to minutes
-        participant_frames = frame.get("participantFrames", {})
+    for member in team_members:
+        participant_id = member["participantId"]
+        gold_over_time = []
 
-        for participant_id, participant_data in participant_frames.items():
-            if participant_data.get("participantId") == player_stats.get("participantId"):
-                gold_over_time_data.append(participant_data.get("totalGold"))
-                break
+        for frame in timeline_data["info"]["frames"]:
+            minute = frame["timestamp"] // 60000  # Convert ms to minutes
+            if str(participant_id) in frame["participantFrames"]:
+                total_gold = frame["participantFrames"][str(participant_id)]["totalGold"]
+                gold_over_time.append([minute, total_gold])
 
-    analytics = {
+        team_gold_data.append({
+            "championName": member["championName"],
+            "gold_over_time": gold_over_time,
+            "isCurrentPlayer": member["puuid"] == puuid
+        })
+
+    return {
         "summonerInfo": {
-            "gameName": player_stats.get("riotIdGameName"),
-            "tagLine": player_stats.get("riotIdTagline"),
-            "championPlayed": player_stats.get("championName"),
-            "win": player_stats.get("win")
+            "gameName": gameName,
+            "tagLine": tagLine,
+            "championPlayed": current_participant["championName"],
+            "win": current_participant["win"]
         },
-        "gold_over_time_data": gold_over_time_data,
-        "matchId": most_recent_match_id
+        "team_gold_data": team_gold_data
     }
-
-    return analytics
 
