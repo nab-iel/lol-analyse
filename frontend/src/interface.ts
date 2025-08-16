@@ -19,3 +19,13 @@ export type StatsData = {
     summonerInfo: SummonerInfo;
     team_gold_data: PlayerGoldData[];
 };
+
+export type SeriesData = {
+    name: string;
+    data: [number, number][];
+    color?: string;
+    fillOpacity?: number;
+    zIndex?: number;
+    lineWidth?: number;
+    isHighlighted?: boolean;
+};
