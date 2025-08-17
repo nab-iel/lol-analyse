@@ -11,9 +11,12 @@ RIOT_API_KEY = os.getenv("RIOT_API_KEY")
 if not RIOT_API_KEY:
     raise ValueError("RIOT_API_KEY not found in environment variables.")
 RIOT_BASE_URL = "https://europe.api.riotgames.com"
+
+
 @app.get("/")
 def read_root():
     return {"Hello": "Welcome to the LoL Stats API"}
+
 
 @app.get("/stats/{gameName}/{tagLine}")
 async def get_most_recent_game_stats(gameName: str, tagLine: str):
@@ -77,22 +80,46 @@ async def get_most_recent_game_stats(gameName: str, tagLine: str):
         if p["teamId"] == current_participant["teamId"]
     ]
 
-    team_gold_data = []
+    enemy_team_members = [
+        p for p in match_data["info"]["participants"]
+        if p["teamId"] != current_participant["teamId"]
+    ]
 
+    enemy_laner = None
+    for enemy in enemy_team_members:
+        if enemy.get("lane") == current_participant.get("lane") and enemy.get("role") == current_participant.get(
+                "role"):
+            enemy_laner = enemy
+            break
+
+    team_gold_data = []
     for member in team_members:
         participant_id = member["participantId"]
         gold_over_time = []
-
         for frame in timeline_data["info"]["frames"]:
-            minute = frame["timestamp"] // 60000  # Convert ms to minutes
+            minute = frame["timestamp"] // 60000
             if str(participant_id) in frame["participantFrames"]:
                 total_gold = frame["participantFrames"][str(participant_id)]["totalGold"]
                 gold_over_time.append([minute, total_gold])
-
         team_gold_data.append({
             "championName": member["championName"],
             "gold_over_time": gold_over_time,
             "isCurrentPlayer": member["puuid"] == puuid
+        })
+
+    enemy_team_gold_data = []
+    for member in enemy_team_members:
+        participant_id = member["participantId"]
+        gold_over_time = []
+        for frame in timeline_data["info"]["frames"]:
+            minute = frame["timestamp"] // 60000
+            if str(participant_id) in frame["participantFrames"]:
+                total_gold = frame["participantFrames"][str(participant_id)]["totalGold"]
+                gold_over_time.append([minute, total_gold])
+        enemy_team_gold_data.append({
+            "championName": member["championName"],
+            "gold_over_time": gold_over_time,
+            "isEnemyLaner": enemy_laner and member["puuid"] == enemy_laner["puuid"]
         })
 
     return {
@@ -100,15 +127,20 @@ async def get_most_recent_game_stats(gameName: str, tagLine: str):
             "gameName": gameName,
             "tagLine": tagLine,
             "championPlayed": current_participant["championName"],
-            "championPfp": f"https://ddragon.leagueoflegends.com/cdn/14.12.1/img/champion/{current_participant["championName"]}.png",
+            "championPfp": f"https://ddragon.leagueoflegends.com/cdn/15.16.1/img/champion/{current_participant['championName']}.png",
             "win": current_participant["win"],
             "gameMode": match_data["info"].get("gameMode"),
             "kills": current_participant["kills"],
             "deaths": current_participant["deaths"],
-            "assists": current_participant["assists"]
+            "assists": current_participant["assists"],
+            "lane": current_participant.get("lane"),
+            "role": current_participant.get("role"),
+            "enemyLaner": enemy_laner["championName"] if enemy_laner else None
         },
-        "team_gold_data": team_gold_data
+        "team_gold_data": team_gold_data,
+        "enemy_team_gold_data": enemy_team_gold_data
     }
+
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=8000)
