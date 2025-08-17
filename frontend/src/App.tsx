@@ -97,6 +97,40 @@ function App() {
             />
           </div>
         </div>
+        <div className='xl:col-span-2'>
+          <GoldGraph
+            title="Your Gold vs Enemy Laner"
+            series={(() => {
+              const enemyLaner = statsData.enemy_team_gold_data?.find(p => p.isEnemyLaner);
+              const currentPlayer = statsData.team_gold_data?.find(p => p.isCurrentPlayer);
+              
+              const enemyFinalGold = enemyLaner?.gold_over_time?.slice(-1)[0]?.[1] || 0;
+              const playerFinalGold = currentPlayer?.gold_over_time?.slice(-1)[0]?.[1] || 0;
+              
+              const playerHasHigherGold = playerFinalGold > enemyFinalGold;
+              
+              return [
+          {
+            name: `${enemyLaner?.championName}`,
+            data: enemyLaner?.gold_over_time || [],
+            color: '#ff6b6b',
+            fillOpacity: 0.4,
+            zIndex: playerHasHigherGold ? 2 : 1
+          },
+          {
+            name: `${currentPlayer?.championName} (You)`,
+            data: currentPlayer?.gold_over_time || [],
+            color: '#4287f5',
+            fillOpacity: 0.2,
+            zIndex: playerHasHigherGold ? 1 : 2,
+            isHighlighted: true
+          }
+              ];
+            })()}
+            showPercentage={true}
+            baseSeriesName="Enemy Laner Gold"
+          />
+        </div>
       </div>
     </div>
   );
