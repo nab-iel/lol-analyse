@@ -12,11 +12,9 @@ if not RIOT_API_KEY:
     raise ValueError("RIOT_API_KEY not found in environment variables.")
 RIOT_BASE_URL = "https://europe.api.riotgames.com"
 
-
 @app.get("/")
 def read_root():
     return {"Hello": "Welcome to the LoL Stats API"}
-
 
 @app.get("/stats/{gameName}/{tagLine}")
 async def get_most_recent_game_stats(gameName: str, tagLine: str):
@@ -86,11 +84,18 @@ async def get_most_recent_game_stats(gameName: str, tagLine: str):
     ]
 
     enemy_laner = None
-    for enemy in enemy_team_members:
-        if enemy.get("lane") == current_participant.get("lane") and enemy.get("role") == current_participant.get(
-                "role"):
-            enemy_laner = enemy
-            break
+    lane_to_index = {
+        "TOP": 0,
+        "JUNGLE": 1,
+        "MIDDLE": 2,
+        "BOTTOM": 3,
+        "UTILITY": 4
+    }
+
+    current_participant_lane_index = lane_to_index.get(current_participant.get("lane"))
+
+    if current_participant_lane_index is not None:
+        enemy_laner = enemy_team_members[current_participant_lane_index]
 
     team_gold_data = []
     for member in team_members:
@@ -140,7 +145,6 @@ async def get_most_recent_game_stats(gameName: str, tagLine: str):
         "team_gold_data": team_gold_data,
         "enemy_team_gold_data": enemy_team_gold_data
     }
-
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=8000)
