@@ -101,14 +101,19 @@ async def get_most_recent_game_stats(gameName: str, tagLine: str):
     for member in team_members:
         participant_id = member["participantId"]
         gold_over_time = []
+        damage_over_time = []
         for frame in timeline_data["info"]["frames"]:
             minute = frame["timestamp"] // 60000
-            if str(participant_id) in frame["participantFrames"]:
-                total_gold = frame["participantFrames"][str(participant_id)]["totalGold"]
+            pf = frame["participantFrames"].get(str(participant_id))
+            if pf:
+                total_gold = pf["totalGold"]
                 gold_over_time.append([minute, total_gold])
+                damage = pf.get("damageStats", {}).get("totalDamageDoneToChampions", 0)
+                damage_over_time.append([minute, damage])
         team_gold_data.append({
             "championName": member["championName"],
             "gold_over_time": gold_over_time,
+            "damage_over_time": damage_over_time,
             "isCurrentPlayer": member["puuid"] == puuid
         })
 
