@@ -15,6 +15,7 @@ export type SummonerInfo = {
 export type PlayerGoldData = {
     championName: string;
     gold_over_time: [number, number][];
+    damage_over_time: [number, number][];
     isCurrentPlayer?: boolean;
     isEnemyLaner?: boolean;
 };

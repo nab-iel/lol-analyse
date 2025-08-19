@@ -56,11 +56,10 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-8">
-      <div className="min-w-screen mx-auto px-4">
+      <div className="min-w-screen mx-auto px-4 space-y-8">
         <h1 className="text-4xl font-bold text-black text-center mb-8">
           Recent Game Stats
         </h1>
-
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-1">
             <PlayerCard summonerInfo={statsData.summonerInfo} />
@@ -97,39 +96,76 @@ function App() {
             />
           </div>
         </div>
-        <div className='xl:col-span-2'>
-          <GoldGraph
-            title="Your Gold vs Enemy Laner"
-            series={(() => {
-              const enemyLaner = statsData.enemy_team_gold_data?.find(p => p.isEnemyLaner);
-              const currentPlayer = statsData.team_gold_data?.find(p => p.isCurrentPlayer);
-              
-              const enemyFinalGold = enemyLaner?.gold_over_time?.slice(-1)[0]?.[1] || 0;
-              const playerFinalGold = currentPlayer?.gold_over_time?.slice(-1)[0]?.[1] || 0;
-              
-              const playerHasHigherGold = playerFinalGold > enemyFinalGold;
-              
-              return [
-          {
-            name: `${enemyLaner?.championName}`,
-            data: enemyLaner?.gold_over_time || [],
-            color: '#ff6b6b',
-            fillOpacity: 0.4,
-            zIndex: playerHasHigherGold ? 2 : 1
-          },
-          {
-            name: `${currentPlayer?.championName} (You)`,
-            data: currentPlayer?.gold_over_time || [],
-            color: '#4287f5',
-            fillOpacity: 0.2,
-            zIndex: playerHasHigherGold ? 1 : 2,
-            isHighlighted: true
-          }
-              ];
-            })()}
-            showPercentage={true}
-            baseSeriesName="Enemy Laner Gold"
-          />
+        <div className="grid grid-cols-1">
+          <div>
+            <GoldGraph
+              title="Your Gold vs Enemy Laner"
+              series={(() => {
+                const enemyLaner = statsData.enemy_team_gold_data?.find(p => p.isEnemyLaner);
+                const currentPlayer = statsData.team_gold_data?.find(p => p.isCurrentPlayer);
+
+                const enemyFinalGold = enemyLaner?.gold_over_time?.slice(-1)[0]?.[1] || 0;
+                const playerFinalGold = currentPlayer?.gold_over_time?.slice(-1)[0]?.[1] || 0;
+
+                const playerHasHigherGold = playerFinalGold > enemyFinalGold;
+
+                return [
+                  {
+                    name: `${enemyLaner?.championName}`,
+                    data: enemyLaner?.gold_over_time || [],
+                    color: '#ff6b6b',
+                    fillOpacity: 0.4,
+                    zIndex: playerHasHigherGold ? 2 : 1
+                  },
+                  {
+                    name: `${currentPlayer?.championName} (You)`,
+                    data: currentPlayer?.gold_over_time || [],
+                    color: '#4287f5',
+                    fillOpacity: 0.2,
+                    zIndex: playerHasHigherGold ? 1 : 2,
+                    isHighlighted: true
+                  }
+                ];
+              })()}
+              showPercentage={true}
+              baseSeriesName="Enemy Laner Gold"
+            />
+          </div>
+        </div>
+
+        {/* Damage Comparison */}
+        <div className="grid grid-cols-1">
+          <div>
+            <GoldGraph
+              title="Your Damage vs Team Total Damage"
+              yAxisTitle="Damage"
+              series={[
+                {
+                  name: 'Team Total Damage',
+                  data: statsData.team_gold_data?.[0]?.damage_over_time?.map((_, index) => {
+                    const minute = statsData.team_gold_data[0].damage_over_time[index][0];
+                    const totalDamage = statsData.team_gold_data.reduce((sum, player) => {
+                      return sum + (player.damage_over_time[index]?.[1] || 0);
+                    }, 0);
+                    return [minute, totalDamage];
+                  }) || [],
+                  color: '#9c27b0',
+                  fillOpacity: 0.2,
+                  zIndex: 1
+                },
+                {
+                  name: `${statsData.team_gold_data?.find(p => p.isCurrentPlayer)?.championName} (You)`,
+                  data: statsData.team_gold_data?.find(p => p.isCurrentPlayer)?.damage_over_time || [],
+                  color: '#e91e63',
+                  fillOpacity: 0.4,
+                  zIndex: 2,
+                  isHighlighted: true
+                }
+              ]}
+              showPercentage={true}
+              baseSeriesName="Team Total Damage"
+            />
+          </div>
         </div>
       </div>
     </div>
