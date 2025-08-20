@@ -28,7 +28,7 @@ const PlayerCard = ({ summonerInfo }: PlayerCardProps) => {
                 
                 <div className="flex-1">
                     <h2 className="text-2xl font-bold mb-1">
-                        {summonerInfo.gameName}#{summonerInfo.tagLine}
+                        {summonerInfo.gameName ? `${summonerInfo.gameName}#${summonerInfo.tagLine}` : summonerInfo.championPlayed}
                     </h2>
                     <p className="text-lg opacity-90 mb-2">{summonerInfo.championPlayed}</p>
                     <div className={`

@@ -1,6 +1,6 @@
 export type SummonerInfo = {
-    gameName: string;
-    tagLine: string;
+    gameName?: string;
+    tagLine?: string;
     championPlayed: string;
     championPfp: string;
     win: boolean;
@@ -9,7 +9,7 @@ export type SummonerInfo = {
     assists: number;
     lane: string;
     role: string;
-    enemyLaner: string;
+    enemyLaner?: string;
 };
 
 export type PlayerGoldData = {
@@ -21,7 +21,8 @@ export type PlayerGoldData = {
 };
 
 export type StatsData = {
-    summonerInfo: SummonerInfo;
+    playerInfo: SummonerInfo;
+    enemyLanerInfo: SummonerInfo;
     team_gold_data: PlayerGoldData[];
     enemy_team_gold_data: PlayerGoldData[];
 };

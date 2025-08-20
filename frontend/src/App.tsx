@@ -56,16 +56,19 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-8">
-      <div className="min-w-screen mx-auto px-4 space-y-8">
-        <h1 className="text-4xl font-bold text-black text-center mb-8">
+      <div className="min-w-screen mx-auto px-4">
+        <h1 className="text-4xl font-bold text-center mb-8">
           Recent Game Stats
         </h1>
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="xl:col-span-1">
-            <PlayerCard summonerInfo={statsData.summonerInfo} />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1 space-y-6">
+            <PlayerCard summonerInfo={statsData.playerInfo} />
+            <PlayerCard summonerInfo={statsData.enemyLanerInfo} />
           </div>
 
-          <div className="xl:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Team Gold Comparison */}
             <GoldGraph
               title="Your Gold vs Team Total Gold"
               series={[
@@ -94,10 +97,7 @@ function App() {
               showPercentage={true}
               baseSeriesName="Team Total Gold"
             />
-          </div>
-        </div>
-        <div className="grid grid-cols-1">
-          <div>
+
             <GoldGraph
               title="Your Gold vs Enemy Laner"
               series={(() => {
@@ -130,12 +130,8 @@ function App() {
               showPercentage={true}
               baseSeriesName="Enemy Laner Gold"
             />
-          </div>
-        </div>
 
-        {/* Damage Comparison */}
-        <div className="grid grid-cols-1">
-          <div>
+            {/* Damage Comparison */}
             <GoldGraph
               title="Your Damage vs Team Total Damage"
               yAxisTitle="Damage"
