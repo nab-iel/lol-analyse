@@ -133,7 +133,7 @@ async def get_most_recent_game_stats(gameName: str, tagLine: str):
         })
 
     return {
-        "summonerInfo": {
+        "playerInfo": {
             "gameName": gameName,
             "tagLine": tagLine,
             "championPlayed": current_participant["championName"],
@@ -147,6 +147,16 @@ async def get_most_recent_game_stats(gameName: str, tagLine: str):
             "role": current_participant.get("role"),
             "enemyLaner": enemy_laner["championName"] if enemy_laner else None
         },
+        "enemyLanerInfo": {
+            "championPlayed": enemy_laner["championName"] if enemy_laner else None,
+            "championPfp": f"https://ddragon.leagueoflegends.com/cdn/15.16.1/img/champion/{enemy_laner['championName']}.png" if enemy_laner else None,
+            "win": enemy_laner["win"] if enemy_laner else None,
+            "kills": enemy_laner["kills"] if enemy_laner else None,
+            "deaths": enemy_laner["deaths"] if enemy_laner else None,
+            "assists": enemy_laner["assists"] if enemy_laner else None,
+            "lane": enemy_laner.get("lane") if enemy_laner else None,
+            "role": enemy_laner.get("role") if enemy_laner else None
+        } if enemy_laner else None,
         "team_gold_data": team_gold_data,
         "enemy_team_gold_data": enemy_team_gold_data
     }
