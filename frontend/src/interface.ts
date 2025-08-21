@@ -10,7 +10,15 @@ export type SummonerInfo = {
     lane: string;
     role: string;
     enemyLaner?: string;
+    items: itemData[];
+    trinket: itemData;
 };
+
+export type itemData = {
+    id: string;
+    name: string;
+    image: string;
+}
 
 export type PlayerGoldData = {
     championName: string;
