@@ -12,9 +12,37 @@ if not RIOT_API_KEY:
     raise ValueError("RIOT_API_KEY not found in environment variables.")
 RIOT_BASE_URL = "https://europe.api.riotgames.com"
 
+def get_item_info(item_id):
+    """Convert item ID to item name and image URL"""
+    if item_id == 0:
+        return None
+
+    return {
+        "id": item_id,
+        "name": f"Item_{item_id}",  # Placeholder for item name
+        "image": f"https://ddragon.leagueoflegends.com/cdn/15.16.1/img/item/{item_id}.png"
+    }
+
+
+def format_items(participant_data):
+    """Format items array with names and images, excluding trinket"""
+    items = []
+    for i in range(6):
+        item_id = participant_data.get(f"item{i}", 0)
+        item_info = get_item_info(item_id)
+        if item_info:
+            items.append(item_info)
+    return items
+
+def get_trinket(participant_data):
+    """Get trinket information"""
+    trinket_id = participant_data.get("item6", 0)
+    return get_item_info(trinket_id)
+
 @app.get("/")
 def read_root():
     return {"Hello": "Welcome to the LoL Stats API"}
+
 
 @app.get("/stats/{gameName}/{tagLine}")
 async def get_most_recent_game_stats(gameName: str, tagLine: str):
@@ -145,7 +173,9 @@ async def get_most_recent_game_stats(gameName: str, tagLine: str):
             "assists": current_participant["assists"],
             "lane": current_participant.get("lane"),
             "role": current_participant.get("role"),
-            "enemyLaner": enemy_laner["championName"] if enemy_laner else None
+            "enemyLaner": enemy_laner["championName"] if enemy_laner else None,
+            "items": format_items(current_participant),
+            "trinket": get_trinket(current_participant)
         },
         "enemyLanerInfo": {
             "championPlayed": enemy_laner["championName"] if enemy_laner else None,
@@ -155,7 +185,9 @@ async def get_most_recent_game_stats(gameName: str, tagLine: str):
             "deaths": enemy_laner["deaths"] if enemy_laner else None,
             "assists": enemy_laner["assists"] if enemy_laner else None,
             "lane": enemy_laner.get("lane") if enemy_laner else None,
-            "role": enemy_laner.get("role") if enemy_laner else None
+            "role": enemy_laner.get("role") if enemy_laner else None,
+            "items": format_items(enemy_laner) if enemy_laner else None,
+            "trinket": get_trinket(enemy_laner) if enemy_laner else None
         } if enemy_laner else None,
         "team_gold_data": team_gold_data,
         "enemy_team_gold_data": enemy_team_gold_data
