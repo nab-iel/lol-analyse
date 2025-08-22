@@ -59,7 +59,6 @@ const PlayerCard = ({ summonerInfo }: PlayerCardProps) => {
                 </div>
             </div>
             <div>
-                <h4 className="text-lg opacity-90 mb-3">Items</h4>
                 <div className="flex items-start gap-3">
                     <div className="grid grid-cols-3 grid-rows-2 gap-2">
                         {items.map((item, index) => (
