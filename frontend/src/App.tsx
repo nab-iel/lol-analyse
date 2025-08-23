@@ -131,6 +131,37 @@ function App() {
               baseSeriesName="Enemy Laner Gold"
             />
 
+            {/* Gold Advantage Graph */}
+            <GoldGraph
+              title="Team Gold Advantage Over Time"
+              yAxisTitle="Gold Advantage"
+              series={[
+                {
+                  name: 'Gold Advantage',
+                  data: statsData.team_gold_data?.[0]?.gold_over_time?.map((_, index) => {
+                    const minute = statsData.team_gold_data[0].gold_over_time[index][0];
+                    
+                    const teamTotalGold = statsData.team_gold_data.reduce((sum, player) => {
+                      return sum + (player.gold_over_time[index]?.[1] || 0);
+                    }, 0);
+                    
+                    const enemyTotalGold = statsData.enemy_team_gold_data?.reduce((sum, player) => {
+                      return sum + (player.gold_over_time[index]?.[1] || 0);
+                    }, 0) || 0;
+                
+                    const goldAdvantage = teamTotalGold - enemyTotalGold;
+                    
+                    return [minute, goldAdvantage];
+                  }) || [],
+                  color: '#10b981',
+                  fillOpacity: 0.3,
+                  zIndex: 1,
+                  lineWidth: 3
+                }
+              ]}
+              showPercentage={false}
+            />
+
             {/* Damage Comparison */}
             <GoldGraph
               title="Your Damage vs Team Total Damage"

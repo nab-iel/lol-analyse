@@ -39,7 +39,13 @@ const GoldGraph = ({
         yAxis: {
             title: {
                 text: yAxisTitle
-            }
+            },
+            plotLines: yAxisTitle === 'Gold Advantage' ? [{
+                value: 0,
+                color: '#666',
+                dashStyle: 'dash',
+                width: 2
+            }] : []
         },
         tooltip: {
             shared: true,
@@ -92,10 +98,20 @@ const GoldGraph = ({
         series: series.map(seriesItem => ({
             name: seriesItem.name,
             data: seriesItem.data,
-            color: seriesItem.color || undefined,
+            color: yAxisTitle === 'Gold Advantage' ? undefined : (seriesItem.color || undefined), 
             fillOpacity: seriesItem.fillOpacity || 0.3,
             zIndex: seriesItem.zIndex || 1,
-            lineWidth: seriesItem.lineWidth || (seriesItem.isHighlighted ? 3 : 2)
+            lineWidth: seriesItem.lineWidth || (seriesItem.isHighlighted ? 3 : 2),
+            ...(yAxisTitle === 'Gold Advantage' && {
+                zones: [{
+                    value: 0,
+                    color: '#ef4444', 
+                    fillColor: 'rgba(239, 68, 68, 0.3)'
+                }, {
+                    color: '#3b82f6', 
+                    fillColor: 'rgba(59, 130, 246, 0.3)'
+                }]
+            })
         }))
     };
 
