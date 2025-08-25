@@ -3,6 +3,7 @@ import axios from 'axios';
 
 import GoldGraph from './components/GoldGraph';
 import PlayerCard from './components/PlayerCard';
+import PieChart from './components/PieChart';
 import type { StatsData } from './interface'
 
 function App() {
@@ -29,6 +30,48 @@ function App() {
     };
     fetchStats();
   }, [gameName, tagLine]);
+
+  const calculateGoldAdvantageData = () => {
+    if (!statsData?.team_gold_data?.[0]?.gold_over_time) return [];
+
+    return statsData.team_gold_data[0].gold_over_time.map((_, index) => {
+      const minute = statsData.team_gold_data[0].gold_over_time[index][0];
+
+      const teamTotalGold = statsData.team_gold_data.reduce((sum, player) => {
+        return sum + (player.gold_over_time[index]?.[1] || 0);
+      }, 0);
+
+      const enemyTotalGold = statsData.enemy_team_gold_data?.reduce((sum, player) => {
+        return sum + (player.gold_over_time[index]?.[1] || 0);
+      }, 0) || 0;
+
+      return [minute, teamTotalGold - enemyTotalGold];
+    });
+  };
+
+  const goldAdvantageData = calculateGoldAdvantageData();
+
+  const timeAhead = goldAdvantageData.filter(([_, advantage]) => advantage > 0).length;
+  const timeBehind = goldAdvantageData.filter(([_, advantage]) => advantage < 0).length;
+  const timeEven = goldAdvantageData.filter(([_, advantage]) => advantage === 0).length;
+
+  const pieChartData = [
+    {
+      name: 'Time Ahead',
+      y: timeAhead,
+      color: '#3b82f6' // blue-500
+    },
+    {
+      name: 'Time Behind',
+      y: timeBehind,
+      color: '#ef4444' // red-500
+    },
+    ...(timeEven > 0 ? [{
+      name: 'Time Even',
+      y: timeEven,
+      color: '#6b7280' // gray-500
+    }] : [])
+  ];
 
   if (isLoading) {
     return (
@@ -60,7 +103,7 @@ function App() {
         <h1 className="text-4xl font-bold text-center mb-8">
           Recent Game Stats
         </h1>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-6">
             <PlayerCard summonerInfo={statsData.playerInfo} />
@@ -140,17 +183,17 @@ function App() {
                   name: 'Gold Advantage',
                   data: statsData.team_gold_data?.[0]?.gold_over_time?.map((_, index) => {
                     const minute = statsData.team_gold_data[0].gold_over_time[index][0];
-                    
+
                     const teamTotalGold = statsData.team_gold_data.reduce((sum, player) => {
                       return sum + (player.gold_over_time[index]?.[1] || 0);
                     }, 0);
-                    
+
                     const enemyTotalGold = statsData.enemy_team_gold_data?.reduce((sum, player) => {
                       return sum + (player.gold_over_time[index]?.[1] || 0);
                     }, 0) || 0;
-                
+
                     const goldAdvantage = teamTotalGold - enemyTotalGold;
-                    
+
                     return [minute, goldAdvantage];
                   }) || [],
                   color: '#10b981',
@@ -161,6 +204,17 @@ function App() {
               ]}
               showPercentage={false}
             />
+
+            <PieChart
+              title="Gold Advantage Time Distribution"
+              units={'Minutes'}
+              data={pieChartData}
+              height={350}
+              showPercentage={true}
+              showLegend={true}
+              showDataLabels={true}
+              allowPointSelect={true}
+            />  
 
             {/* Damage Comparison */}
             <GoldGraph
