@@ -2,7 +2,7 @@ import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import type { SeriesData } from '../interface';
 
-type GoldGraphProps = {
+type AreaLineGraphProps = {
     title?: string;
     xAxisTitle?: string;
     yAxisTitle?: string;
@@ -12,7 +12,7 @@ type GoldGraphProps = {
     baseSeriesName?: string;
 };
 
-const GoldGraph = ({
+const AreaLineGraph = ({
     title = 'Gold Over Time',
     xAxisTitle = 'Minute',
     yAxisTitle = 'Gold',
@@ -20,9 +20,9 @@ const GoldGraph = ({
     height = 400,
     showPercentage = false,
     baseSeriesName
-}: GoldGraphProps) => {
+}: AreaLineGraphProps) => {
 
-    const goldOverTimeOptions = {
+    const dataOverTimeOptions = {
         chart: {
             type: 'areaspline',
             width: null,
@@ -119,11 +119,11 @@ const GoldGraph = ({
         <div className="p-6 rounded-lg shadow-lg h-full w-full bg-white" style={{ height: `${height + 50}px` }}>
             <HighchartsReact
                 highcharts={Highcharts}
-                options={goldOverTimeOptions}
+                options={dataOverTimeOptions}
                 containerProps={{ style: { width: '100%', height: '100%' } }}
             />
         </div>
     );
 };
 
-export default GoldGraph;
+export default AreaLineGraph;

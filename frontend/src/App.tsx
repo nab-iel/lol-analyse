@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-import GoldGraph from './components/GoldGraph';
+import AreaLineGraph from './components/AreaLineGraph';
 import PlayerCard from './components/PlayerCard';
 import PieChart from './components/PieChart';
 import type { StatsData } from './interface'
@@ -112,7 +112,7 @@ function App() {
 
           <div className="lg:col-span-2 space-y-6">
             {/* Team Gold Comparison */}
-            <GoldGraph
+            <AreaLineGraph
               title="Your Gold vs Team Total Gold"
               series={[
                 {
@@ -141,7 +141,7 @@ function App() {
               baseSeriesName="Team Total Gold"
             />
 
-            <GoldGraph
+            <AreaLineGraph
               title="Your Gold vs Enemy Laner"
               series={(() => {
                 const enemyLaner = statsData.enemy_team_gold_data?.find(p => p.isEnemyLaner);
@@ -175,7 +175,7 @@ function App() {
             />
 
             {/* Gold Advantage Graph */}
-            <GoldGraph
+            <AreaLineGraph
               title="Team Gold Advantage Over Time"
               yAxisTitle="Gold Advantage"
               series={[
@@ -217,7 +217,7 @@ function App() {
             />  
 
             {/* Damage Comparison */}
-            <GoldGraph
+            <AreaLineGraph
               title="Your Damage vs Team Total Damage"
               yAxisTitle="Damage"
               series={[
