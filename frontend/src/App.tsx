@@ -5,6 +5,7 @@ import AreaLineGraph from './components/AreaLineGraph';
 import PlayerCard from './components/PlayerCard';
 import PieChart from './components/PieChart';
 import type { StatsData } from './interface'
+import GraphCarousel from './components/GraphCarousel';
 
 function App() {
   const [statsData, setStatsData] = useState<StatsData | null>(null);
@@ -174,47 +175,47 @@ function App() {
               baseSeriesName="Enemy Laner Gold"
             />
 
-            {/* Gold Advantage Graph */}
-            <AreaLineGraph
-              title="Team Gold Advantage Over Time"
-              yAxisTitle="Gold Advantage"
-              series={[
-                {
-                  name: 'Gold Advantage',
-                  data: statsData.team_gold_data?.[0]?.gold_over_time?.map((_, index) => {
-                    const minute = statsData.team_gold_data[0].gold_over_time[index][0];
+            <GraphCarousel>
+              <AreaLineGraph
+                title="Team Gold Advantage Over Time"
+                yAxisTitle="Gold Advantage"
+                series={[
+                  {
+                    name: 'Gold Advantage',
+                    data: statsData.team_gold_data?.[0]?.gold_over_time?.map((_, index) => {
+                      const minute = statsData.team_gold_data[0].gold_over_time[index][0];
 
-                    const teamTotalGold = statsData.team_gold_data.reduce((sum, player) => {
-                      return sum + (player.gold_over_time[index]?.[1] || 0);
-                    }, 0);
+                      const teamTotalGold = statsData.team_gold_data.reduce((sum, player) => {
+                        return sum + (player.gold_over_time[index]?.[1] || 0);
+                      }, 0);
 
-                    const enemyTotalGold = statsData.enemy_team_gold_data?.reduce((sum, player) => {
-                      return sum + (player.gold_over_time[index]?.[1] || 0);
-                    }, 0) || 0;
+                      const enemyTotalGold = statsData.enemy_team_gold_data?.reduce((sum, player) => {
+                        return sum + (player.gold_over_time[index]?.[1] || 0);
+                      }, 0) || 0;
 
-                    const goldAdvantage = teamTotalGold - enemyTotalGold;
+                      const goldAdvantage = teamTotalGold - enemyTotalGold;
 
-                    return [minute, goldAdvantage];
-                  }) || [],
-                  color: '#10b981',
-                  fillOpacity: 0.3,
-                  zIndex: 1,
-                  lineWidth: 3
-                }
-              ]}
-              showPercentage={false}
-            />
-
-            <PieChart
-              title="Gold Advantage Time Distribution"
-              units={'Minutes'}
-              data={pieChartData}
-              height={350}
-              showPercentage={true}
-              showLegend={true}
-              showDataLabels={true}
-              allowPointSelect={true}
-            />  
+                      return [minute, goldAdvantage];
+                    }) || [],
+                    color: '#10b981',
+                    fillOpacity: 0.3,
+                    zIndex: 1,
+                    lineWidth: 3
+                  }
+                ]}
+                showPercentage={false}
+              />
+              <PieChart
+                title="Gold Advantage Time Distribution"
+                units={'Minutes'}
+                data={pieChartData}
+                height={350}
+                showPercentage={true}
+                showLegend={true}
+                showDataLabels={true}
+                allowPointSelect={true}
+              />
+            </GraphCarousel>
 
             {/* Damage Comparison */}
             <AreaLineGraph
