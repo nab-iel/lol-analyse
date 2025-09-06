@@ -175,7 +175,9 @@ function App() {
               baseSeriesName="Enemy Laner Gold"
             />
 
-            <GraphCarousel>
+            <GraphCarousel
+              height={400}
+            >
               <AreaLineGraph
                 title="Team Gold Advantage Over Time"
                 yAxisTitle="Gold Advantage"
@@ -209,7 +211,6 @@ function App() {
                 title="Gold Advantage Time Distribution"
                 units={'Minutes'}
                 data={pieChartData}
-                height={350}
                 showPercentage={true}
                 showLegend={true}
                 showDataLabels={true}
