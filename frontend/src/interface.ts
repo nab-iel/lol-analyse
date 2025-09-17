@@ -1,5 +1,19 @@
+export type StatsData = {
+    gameMode: string;
+    matchId: string;
+    players: SummonerInfo[];
+    goldOverTime: goldData[];
+    winningTeam: string;
+};
+
+export type goldData = {
+    timestamp: number;
+    blueTeamGold: number;
+    redTeamGold: number;
+}
+
 export type SummonerInfo = {
-    gameName?: string;
+    gameName: string;
     tagLine?: string;
     championPlayed: string;
     championPfp: string;
@@ -9,9 +23,14 @@ export type SummonerInfo = {
     assists: number;
     lane: string;
     role: string;
+    teamId: number;
+    team: string;
+    isCurrentPlayer?: boolean;
     enemyLaner?: string;
     items: itemData[];
     trinket: itemData;
+    goldOverTime: [number, number][];
+    damageOverTime: [number, number][];
 };
 
 export type itemData = {
@@ -26,13 +45,6 @@ export type PlayerGoldData = {
     damage_over_time: [number, number][];
     isCurrentPlayer?: boolean;
     isEnemyLaner?: boolean;
-};
-
-export type StatsData = {
-    playerInfo: SummonerInfo;
-    enemyLanerInfo: SummonerInfo;
-    team_gold_data: PlayerGoldData[];
-    enemy_team_gold_data: PlayerGoldData[];
 };
 
 export type SeriesData = {
