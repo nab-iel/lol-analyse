@@ -162,11 +162,14 @@ async def get_most_recent_game_stats(gameName: str, tagLine: str):
             "redTeamGold": red_gold
         })
 
+    winning_team = "Blue" if any(p["win"] and p["teamId"] == 100 for p in participants) else "Red"
+
     return {
         "gameMode": match_data["info"].get("gameMode"),
         "matchId": classic_match_id,
         "players": player_stats_list,
-        "goldOverTime": gold_over_time
+        "goldOverTime": gold_over_time,
+        "winningTeam": winning_team
     }
 
 
